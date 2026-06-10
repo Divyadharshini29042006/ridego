@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { CheckCircle, AlertCircle } from "lucide-react";
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
 function VerifyPasswordResetOtp() {
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [searchParams] = useSearchParams();
@@ -84,7 +86,7 @@ function VerifyPasswordResetOtp() {
 
     setIsLoading(true);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/auth/verify-reset-otp`, {
+      const response = await fetch(`${API_BASE_URL}/auth/verify-reset-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, otp: otpString })
@@ -116,7 +118,7 @@ function VerifyPasswordResetOtp() {
 
     setIsLoading(true);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/auth/resend-reset-otp`, {
+      const response = await fetch(`${API_BASE_URL}/auth/resend-reset-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email })

@@ -3,6 +3,8 @@ import { FaMapMarkerAlt, FaCar, FaMotorcycle, FaGasPump, FaRoad } from "react-ic
 import axios from "axios";
 import "../styles/VehicleFilters.css";
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
 
 
 const vehicleTypes = [
@@ -32,7 +34,7 @@ const VehicleFilters = ({
     const fetchLocations = async () => {
       try {
         setLoading(true);
-        const res = await axios.get("http://localhost:5000/api/locations/public");
+        const res = await axios.get(`${API_BASE_URL}/locations/public`);
         console.log('📍 Fetched locations:', res.data);
         setLocations(res.data);
       } catch (error) {

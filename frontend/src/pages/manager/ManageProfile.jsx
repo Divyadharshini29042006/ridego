@@ -6,6 +6,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import ManagerSidebar from '../../components/Sidebar/ManagerSidebar';
 
 const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || `${backendUrl}/api`;
 
 const ManagerProfile = () => {
   const [manager, setManager] = useState(null);
@@ -33,7 +34,7 @@ const ManagerProfile = () => {
 
   const fetchProfile = async () => {
     try {
-      const res = await axios.get('/api/managers/profile', {
+      const res = await axios.get(`${API_BASE_URL}/managers/profile`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
 
@@ -89,7 +90,7 @@ const ManagerProfile = () => {
     }
 
     try {
-      await axios.put('/api/managers/profile', payload, {
+      await axios.put(`${API_BASE_URL}/managers/profile`, payload, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
       toast.success('Profile updated successfully');
@@ -106,7 +107,7 @@ const ManagerProfile = () => {
     data.append('profileImage', imageFile);
 
     try {
-      await axios.put('/api/managers/profile/image', data, {
+      await axios.put(`${API_BASE_URL}/managers/profile/image`, data, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`,
           'Content-Type': 'multipart/form-data',

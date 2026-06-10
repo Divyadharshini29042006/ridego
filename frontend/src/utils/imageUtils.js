@@ -26,7 +26,12 @@ export const getVehicleImageUrl = (vehicleImagePath) => {
   const filename = vehicleImagePath.split(/[\/\\]/).pop();
   
   // Construct clean URL
-  const base = BACKEND_URL.replace(/\/+$/, '');
+  let base = BACKEND_URL || '';
+  if (!base || base.includes('•') || base.includes('%E2%80%A2') || /^[•\s]+$/.test(base)) {
+    console.warn('⚠️ VITE_BACKEND_URL contains bullet points or is invalid. Falling back to localhost.');
+    base = 'http://localhost:5000';
+  }
+  base = base.replace(/\/+$/, '');
   const imageUrl = `${base}/uploads/vehicles/${filename}`;
   
   // Log the URL transformation for debugging

@@ -1,4 +1,5 @@
 const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import axios from 'axios';
@@ -99,7 +100,7 @@ function ManageLocations() {
   const fetchLocations = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${backendUrl}/api/locations`, {
+      const res = await axios.get(`${API_BASE_URL}/locations`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`
         }
@@ -118,7 +119,7 @@ function ManageLocations() {
 
   const fetchManagers = async () => {
     try {
-      const res = await axios.get(`${backendUrl}/api/users?role=manager`, {
+      const res = await axios.get(`${API_BASE_URL}/users?role=manager`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`
         }
@@ -201,14 +202,14 @@ function ManageLocations() {
     setLoading(true);
     try {
       if (editingId) {
-        await axios.put(`${backendUrl}/api/locations/${editingId}`, form, {
+        await axios.put(`${API_BASE_URL}/locations/${editingId}`, form, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('token')}`
           }
         });
         toast.success('Location updated');
       } else {
-        await axios.post(`${backendUrl}/api/locations/create`, form, {
+        await axios.post(`${API_BASE_URL}/locations/create`, form, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('token')}`
           }
@@ -255,7 +256,7 @@ function ManageLocations() {
 
   const deleteLocation = async (id) => {
     try {
-      await axios.delete(`${backendUrl}/api/locations/${id}`, {
+      await axios.delete(`${API_BASE_URL}/locations/${id}`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`
         }

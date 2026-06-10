@@ -8,6 +8,8 @@ import VehicleMap from '../../components/VehicleMap';
 import { getVehicleImageUrl, handleImageError } from '../../utils/imageUtils';
 import styles from '../../styles/ManageVehiclesPage.module.css';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
 const ManageVehiclesPage = () => {
 
   const [activeTab, setActiveTab] = useState('list');
@@ -136,7 +138,7 @@ const ManageVehiclesPage = () => {
         throw new Error('No authentication token found');
       }
 
-      const response = await axios.get('/api/managers/profile', {
+      const response = await axios.get(`${API_BASE_URL}/managers/profile`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -329,7 +331,7 @@ const ManageVehiclesPage = () => {
 
   const handleEdit = async (vehicle) => {
     try {
-      const res = await axios.get(`/api/managers/vehicles/${vehicle._id}`, {
+      const res = await axios.get(`${API_BASE_URL}/managers/vehicles/${vehicle._id}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
       setEditingVehicle(res.data.vehicle);
@@ -347,7 +349,7 @@ const ManageVehiclesPage = () => {
     if (imageFile) data.append('vehicleImage', imageFile);
 
     try {
-      await axios.put(`/api/managers/vehicles/${editingVehicle._id}`, data, {
+      await axios.put(`${API_BASE_URL}/managers/vehicles/${editingVehicle._id}`, data, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`,
           'Content-Type': 'multipart/form-data',

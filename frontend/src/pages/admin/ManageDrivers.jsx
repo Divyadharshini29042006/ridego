@@ -18,12 +18,16 @@ const ManageDrivers = () => {
   const [uniqueCities, setUniqueCities] = useState([]);
   const [uniqueLocations, setUniqueLocations] = useState([]);
 
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+  let backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+  if (!backendUrl || backendUrl.includes('•') || backendUrl.includes('%E2%80%A2') || /^[•\s]+$/.test(backendUrl)) {
+    backendUrl = 'http://localhost:5000';
+  }
+  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
   const fetchDrivers = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${backendUrl}/api/admin/drivers`, {
+      const res = await axios.get(`${API_BASE_URL}/admin/drivers`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`
         }

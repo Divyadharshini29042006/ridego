@@ -3,6 +3,8 @@ import { createContext, useState, useEffect, useContext } from 'react';
 import { jwtDecode } from 'jwt-decode';
 import axios from 'axios';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
 export const AuthContext = createContext();
 
 export const useAuth = () => {
@@ -147,7 +149,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.get(
-        `${import.meta.env.VITE_API_URL}/users/profile/${user.id}`,
+        `${API_BASE_URL}/users/profile/${user.id}`,
         {
           headers: {
             'Authorization': `Bearer ${token}`

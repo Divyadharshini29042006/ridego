@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Search, Filter, Download, Calendar, CreditCard, CheckCircle, XCircle, Clock, MapPin } from 'lucide-react';
 import styles from '../../styles/ManagePayments.module.css';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
 function ManagePayments() {
   const [payments, setPayments] = useState([]);
   const [filteredPayments, setFilteredPayments] = useState([]);
@@ -27,7 +29,7 @@ function ManagePayments() {
   const fetchLocations = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/locations/public`, {
+      const response = await fetch(`${API_BASE_URL}/locations/public`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -43,7 +45,7 @@ function ManagePayments() {
   const fetchPayments = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/admin/payments`, {
+      const response = await fetch(`${API_BASE_URL}/admin/payments`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

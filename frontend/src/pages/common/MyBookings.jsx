@@ -20,6 +20,8 @@ import {
 } from 'lucide-react';
 import '../../styles/MyBookings.css';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
 const MyBookings = () => {
   const { user } = useAuth();
   const [bookings, setBookings] = useState([]);
@@ -82,7 +84,7 @@ const MyBookings = () => {
 
       // Step 1: Create Razorpay order for penalty
       const orderResponse = await axios.post(
-        `${import.meta.env.VITE_API_URL}/payments/penalty/${selectedPenaltyBooking._id}/create-order`,
+        `${API_BASE_URL}/payments/penalty/${selectedPenaltyBooking._id}/create-order`,
         {},
         {
           headers: { Authorization: `Bearer ${token}` }
@@ -111,7 +113,7 @@ const MyBookings = () => {
 
             // Step 3: Verify payment and mark penalty as paid
             const verifyResponse = await axios.post(
-              `${import.meta.env.VITE_API_URL}/payments/penalty/${selectedPenaltyBooking._id}/verify`,
+              `${API_BASE_URL}/payments/penalty/${selectedPenaltyBooking._id}/verify`,
               {
                 razorpay_payment_id: response.razorpay_payment_id,
                 razorpay_order_id: response.razorpay_order_id,
@@ -190,7 +192,7 @@ const MyBookings = () => {
       const token = localStorage.getItem('token');
       
       const response = await axios.get(
-        `${import.meta.env.VITE_API_URL}/bookings/user`,
+        `${API_BASE_URL}/bookings/user`,
         {
           headers: { Authorization: `Bearer ${token}` }
         }
@@ -222,7 +224,7 @@ const MyBookings = () => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.get(
-        `${import.meta.env.VITE_API_URL}/bookings/${bookingId}/driver-status`,
+        `${API_BASE_URL}/bookings/${bookingId}/driver-status`,
         {
           headers: { Authorization: `Bearer ${token}` }
         }
@@ -337,7 +339,7 @@ const MyBookings = () => {
       const token = localStorage.getItem('token');
 
       const response = await axios.patch(
-        `${import.meta.env.VITE_API_URL}/bookings/${bookingId}/complete`,
+        `${API_BASE_URL}/bookings/${bookingId}/complete`,
         {},
         {
           headers: { Authorization: `Bearer ${token}` }
@@ -373,7 +375,7 @@ const MyBookings = () => {
       const token = localStorage.getItem('token');
 
       const response = await axios.patch(
-        `${import.meta.env.VITE_API_URL}/bookings/${bookingId}/cancel`,
+        `${API_BASE_URL}/bookings/${bookingId}/cancel`,
         { cancellationReason: reason },
         {
           headers: { Authorization: `Bearer ${token}` }

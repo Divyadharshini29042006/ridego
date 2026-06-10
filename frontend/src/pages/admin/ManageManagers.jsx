@@ -19,6 +19,12 @@ import styles from '../../styles/ManageManagers.module.css';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
+let backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+if (!backendUrl || backendUrl.includes('•') || backendUrl.includes('%E2%80%A2') || /^[•\s]+$/.test(backendUrl)) {
+  backendUrl = 'http://localhost:5000';
+}
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
 function ManageManagers() {
   const normalizeImagePath = (path) => {
     if (!path) return '';
@@ -50,7 +56,7 @@ function ManageManagers() {
 
   const fetchManagers = async () => {
     try {
-      const res = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/users?role=manager`, {
+      const res = await axios.get(`${API_BASE_URL}/users?role=manager`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`
         }
@@ -64,7 +70,7 @@ function ManageManagers() {
 
   const fetchLocations = async () => {
     try {
-      const res = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/locations`, {
+      const res = await axios.get(`${API_BASE_URL}/locations`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`
         }
@@ -186,8 +192,8 @@ function ManageManagers() {
     }
 
     const url = editingId
-      ? `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/admin/managers/${editingId}`
-      : `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/auth/register-manager`;
+      ? `${API_BASE_URL}/admin/managers/${editingId}`
+      : `${API_BASE_URL}/auth/register-manager`;
     const method = editingId ? 'put' : 'post';
 
     try {
@@ -407,7 +413,7 @@ function ManageManagers() {
 
           {existingImageUrl && !imageFile && (
             <img
-              src={`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000'}/${existingImageUrl}`}
+              src={`${backendUrl}/${existingImageUrl}`}
               alt="Current Profile"
               className={styles.previewImage}
             />
@@ -454,7 +460,7 @@ function ManageManagers() {
                   <div className={styles.profileImageContainer}>
                     {manager.profileImage ? (
                       <img
-                        src={`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000'}/${encodeURI(normalizeImagePath(manager.profileImage))}`}
+                        src={`${backendUrl}/${encodeURI(normalizeImagePath(manager.profileImage))}`}
                         alt={`${manager.name}'s profile`}
                         className={styles.profileImage}
                       />

@@ -7,6 +7,8 @@ import { FiPhone, FiMail, FiLogOut } from 'react-icons/fi';
 import { FaUserCircle, FaLock } from 'react-icons/fa';
 import '../../styles/ProfileSettings.css';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
 const ProfileSettings = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -64,7 +66,7 @@ const ProfileSettings = () => {
         console.log('🔄 Fetching user profile for ID:', user.id);
         
         const response = await axios.get(
-          `${import.meta.env.VITE_API_URL}/users/profile/${user.id}`,
+          `${API_BASE_URL}/users/profile/${user.id}`,
           {
             headers: {
               'Authorization': `Bearer ${token}`
@@ -221,7 +223,7 @@ const ProfileSettings = () => {
 
       const token = localStorage.getItem('token');
       const response = await axios.put(
-        `${import.meta.env.VITE_API_URL}/users/update/${user.id}`,
+        `${API_BASE_URL}/users/update/${user.id}`,
         formData,
         {
           headers: {
@@ -278,7 +280,7 @@ const ProfileSettings = () => {
       setLoading(true);
       const token = localStorage.getItem('token');
       await axios.post(
-        `${import.meta.env.VITE_API_URL}/users/change-password`,
+        `${API_BASE_URL}/users/change-password`,
         {
           oldPassword: resetPasswordData.oldPassword,
           newPassword: resetPasswordData.newPassword,

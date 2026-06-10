@@ -70,6 +70,7 @@ const ManagerDashboard = () => {
   const [toasts, setToasts] = useState([]);
 
   const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+  const API_BASE_URL = import.meta.env.VITE_API_URL || `${backendUrl}/api`;
 
   // Toast functions
   const addToast = (message, type = 'success') => {
@@ -102,7 +103,7 @@ const ManagerDashboard = () => {
 
   const fetchManagerData = async () => {
     try {
-      const res = await axios.get('/api/managers/dashboard', {
+      const res = await axios.get(`${API_BASE_URL}/managers/dashboard`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
       if (res.status === 200 && res.data) {
@@ -239,7 +240,7 @@ const ManagerDashboard = () => {
         formData.append('profileImage', editForm.profileImage);
       }
 
-      const res = await axios.put('/api/managers/profile', formData, {
+      const res = await axios.put(`${API_BASE_URL}/managers/profile`, formData, {
         headers: { 
           Authorization: `Bearer ${localStorage.getItem('token')}`,
           'Content-Type': 'multipart/form-data'
