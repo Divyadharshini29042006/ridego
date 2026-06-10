@@ -55,10 +55,18 @@ const MapBoundsUpdater = ({ vehicles }) => {
 
   useEffect(() => {
     if (vehicles && vehicles.length > 0) {
-      const bounds = L.latLngBounds(
-        vehicles.map(v => [v.currentLocation.lat, v.currentLocation.lng])
-      );
-      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 13 });
+      const validPoints = vehicles
+        .map(v => {
+          const lat = v.location?.lat || v.currentLocation?.lat;
+          const lng = v.location?.lng || v.currentLocation?.lng;
+          return lat && lng ? [lat, lng] : null;
+        })
+        .filter(p => p !== null);
+
+      if (validPoints.length > 0) {
+        const bounds = L.latLngBounds(validPoints);
+        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 13 });
+      }
     }
   }, [vehicles, map]);
 
@@ -71,12 +79,19 @@ const VehicleMap = ({ vehicles }) => {
   // Set default center to Puducherry
   const defaultCenter = [11.9416, 79.8083];
 
+  const normalizedVehicles = React.useMemo(() => {
+    return vehicles?.map(v => ({
+      ...v,
+      location: v.location || v.currentLocation || { lat: 11.9416, lng: 79.8083 }
+    })) || [];
+  }, [vehicles]);
+
   const getCenter = () => {
-    if (!vehicles || vehicles.length === 0) {
+    if (!normalizedVehicles || normalizedVehicles.length === 0) {
       return defaultCenter;
     }
 
-    const validVehicles = vehicles.filter(
+    const validVehicles = normalizedVehicles.filter(
       v => v.location?.lat && v.location?.lng
     );
 
@@ -101,9 +116,9 @@ const VehicleMap = ({ vehicles }) => {
     });
   };
 
-  const validVehicles = vehicles?.filter(
+  const validVehicles = normalizedVehicles.filter(
     v => v.location?.lat && v.location?.lng
-  ) || [];
+  );
 
   return (
     <div style={{

@@ -112,7 +112,7 @@ const VehicleDetails = () => {
       tripType: selectedTripType?.label,
       tripTypeId: tripType,
       selectedLocation: selectedLocation || vehicle.assignedLocation?.city,
-      selectedSubLocation: selectedSubLocation || ''
+      selectedSubLocation: selectedSubLocation || vehicle.subLocation || ''
     };
 
     // Check if user is logged in
@@ -313,15 +313,21 @@ const VehicleDetails = () => {
           {/* Vehicle Description */}
           <div className={styles['vehicle-description']}>
             <h3>About this {isBike ? 'bike' : 'vehicle'}</h3>
-            <p>
-              Experience the perfect blend of comfort, performance, and style with the {vehicle.brand} {vehicle.vehicleModel}. 
-              This {isBike 
-                ? 'premium motorcycle offers exceptional fuel efficiency and thrilling performance with its reliable engine. Perfect for city rides and long touring adventures, this bike provides the freedom and excitement you crave.'
-                : `premium ${vehicle.vehicleType?.toLowerCase()} offers exceptional fuel efficiency with its ${vehicle.fuelType?.toLowerCase()} engine 
-              and smooth ${vehicle.transmission?.toLowerCase()} transmission. Whether you're navigating city streets or embarking on long road trips, 
-              this vehicle provides the reliability and comfort you need. With spacious seating for ${vehicle.seatingCapacity || 4} passengers and modern amenities, 
-              every journey becomes a memorable experience.`}
-            </p>
+            {vehicle.description ? (
+              <p className={styles['custom-description']}>
+                {vehicle.description}
+              </p>
+            ) : (
+              <p className={styles['default-description']}>
+                Experience the perfect blend of comfort, performance, and style with the {vehicle.brand} {vehicle.vehicleModel}. 
+                This {isBike 
+                  ? 'premium motorcycle offers exceptional fuel efficiency and thrilling performance with its reliable engine. Perfect for city rides and long touring adventures, this bike provides the freedom and excitement you crave.'
+                  : `premium ${vehicle.vehicleType?.toLowerCase()} offers exceptional fuel efficiency with its ${vehicle.fuelType?.toLowerCase()} engine 
+                and smooth ${vehicle.transmission?.toLowerCase()} transmission. Whether you're navigating city streets or embarking on long road trips, 
+                this vehicle provides the reliability and comfort you need. With spacious seating for ${vehicle.seatingCapacity || 4} passengers and modern amenities, 
+                every journey becomes a memorable experience.`}
+              </p>
+            )}
           </div>
         </div>
 

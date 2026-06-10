@@ -48,6 +48,10 @@ export const signupUser = async (req, res) => {
     });
   } catch (error) {
     console.error('Signup error:', error.message);
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map(val => val.message);
+      return res.status(400).json({ message: messages.join(', ') });
+    }
     res.status(500).json({ message: 'Server error during signup' });
   }
 };
@@ -211,6 +215,10 @@ export const registerManager = async (req, res) => {
     res.status(201).json({ message: 'Manager created and location synced', manager });
   } catch (error) {
     console.error('Registration error:', error.message);
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map(val => val.message);
+      return res.status(400).json({ message: messages.join(', ') });
+    }
     res.status(500).json({ message: 'Server error during registration' });
   }
 };

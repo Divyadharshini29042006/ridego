@@ -47,6 +47,22 @@ const MyBookings = () => {
     setPenaltyError('');
   };
 
+  // Load Razorpay Script dynamically
+  const loadRazorpayScript = () => {
+    return new Promise((resolve) => {
+      const existingScript = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
+      if (existingScript) {
+        resolve(true);
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
   // Handle Pay Penalty - Process Payment
   const handlePayPenalty = async () => {
     if (!selectedPenaltyBooking) return;
@@ -54,6 +70,12 @@ const MyBookings = () => {
     try {
       setProcessingPenaltyPayment(true);
       setPenaltyError('');
+
+      const scriptLoaded = await loadRazorpayScript();
+      if (!scriptLoaded) {
+        throw new Error('Failed to load Razorpay. Please check your internet connection.');
+      }
+
       const token = localStorage.getItem('token');
 
       console.log('💰 Starting penalty payment for booking:', selectedPenaltyBooking._id);

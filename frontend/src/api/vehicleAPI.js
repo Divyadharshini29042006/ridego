@@ -170,7 +170,7 @@ const vehicleAPI = {
       // Ensure each vehicle has location data
       const vehicles = response.data.vehicles.map(vehicle => ({
         ...vehicle,
-        location: vehicle.location || {
+        location: vehicle.currentLocation || vehicle.location || {
           lat: 11.9416,
           lng: 79.8083
         }

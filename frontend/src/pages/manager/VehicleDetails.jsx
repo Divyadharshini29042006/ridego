@@ -226,6 +226,12 @@ const VehicleDetails = () => {
                 <strong>Status:</strong> {vehicle.status || 'Available'}
               </div>
             </div>
+            {vehicle.description && (
+              <div style={{ marginTop: '20px', paddingTop: '20px', borderTop: '1px solid #e2e8f0' }}>
+                <strong style={{ display: 'block', marginBottom: '8px', color: '#0f172a' }}>Vehicle Description:</strong>
+                <p style={{ margin: 0, color: '#334155', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>{vehicle.description}</p>
+              </div>
+            )}
           </div>
         </div>
 

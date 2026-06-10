@@ -23,6 +23,7 @@ export const createVehicle = async (req, res) => {
     modelYear,
     mileage,
     subLocation, // Add subLocation from request
+    description,
   } = req.body;
 
   // Parse numeric fields
@@ -82,6 +83,7 @@ export const createVehicle = async (req, res) => {
       modelYear: parsedModelYear,
       mileage: parsedMileage,
       vehicleImage: image,
+      description: description || '',
     });
 
     await vehicle.save();
@@ -142,12 +144,12 @@ export const updateVehicle = async (req, res) => {
 
     const updates = req.body;
 
-    // Include subLocation in allowed updates
+    // Include subLocation and description in allowed updates
     const allowedUpdates = [
       'vehicleModel', 'brand', 'color', 'vehicleType', 'fuelType', 
       'seatingCapacity', 'transmission', 'rentPerDay', 'rentPerHour', 
       'depositAmount', 'vehicleNumber', 'modelYear', 'mileage', 
-      'vehicleImage', 'subLocation'
+      'vehicleImage', 'subLocation', 'description'
     ];
     
     allowedUpdates.forEach(field => {

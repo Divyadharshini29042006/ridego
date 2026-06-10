@@ -51,8 +51,8 @@ const BookingForm = () => {
     if (routeBookingData && !initialized) {
       booking.initializeBooking({
         ...routeBookingData,
-        selectedLocation: routeSelectedLocation,
-        selectedSubLocation: routeSelectedSubLocation
+        selectedLocation: routeSelectedLocation || routeBookingData.selectedLocation,
+        selectedSubLocation: routeSelectedSubLocation || routeBookingData.selectedSubLocation
       });
       setInitialized(true);
     } else if (booking.initialVehicle && !initialized) {
@@ -102,27 +102,21 @@ const BookingForm = () => {
     booking.setAirportArea('');
   }, [booking.hourlyPurpose]);
 
-  // Set initial location if pre-selected
+  // Set initial location if pre-selected (override localStorage)
   useEffect(() => {
-    if (booking.preSelectedLocation && availableLocations.length > 0 && !booking.pickupLocation) {
+    if (booking.preSelectedLocation && availableLocations.length > 0) {
       const city = availableLocations.find(loc => loc.city === booking.preSelectedLocation);
       if (city) {
-        const subCities = city.subCities || [];
         const subLocation = booking.preSelectedSubLocation || 'Main Location';
+        const fullLocation = `${booking.preSelectedLocation} - ${subLocation}`;
         
-        if (subCities.includes(subLocation)) {
-          const fullLocation = `${booking.preSelectedLocation} - ${subLocation}`;
+        if (booking.pickupLocation !== fullLocation) {
           booking.setPickupLocation(fullLocation);
           booking.setPickupFromOurLocation(true);
-        } else if (booking.preSelectedSubLocation) {
-          // Custom location
-          booking.setPickupLocation(`${booking.preSelectedLocation} - Main Location`);
-          booking.setPickupFromOurLocation(false);
-          booking.setCommonCustomAddress(booking.preSelectedSubLocation);
         }
       }
     }
-  }, [availableLocations, booking.preSelectedLocation, booking.preSelectedSubLocation]);
+  }, [availableLocations, booking.preSelectedLocation, booking.preSelectedSubLocation, booking.pickupLocation]);
 
   const fetchLocations = async () => {
     setLoadingLocations(true);
@@ -198,6 +192,14 @@ const BookingForm = () => {
       return vehicleCity === mainCity;
     });
   }, [fetchedVehicles, booking.vehicleConfigs, booking.pickupLocation]);
+
+  const filteredDropLocations = useMemo(() => {
+    const pickupCity = booking.pickupLocation ? booking.pickupLocation.split(' - ')[0] : null;
+    if (pickupCity) {
+      return availableLocations.filter(loc => loc.city === pickupCity);
+    }
+    return availableLocations;
+  }, [availableLocations, booking.pickupLocation]);
 
   const calculateCurrentFare = () => {
     try {
@@ -538,6 +540,36 @@ const BookingForm = () => {
                 <div style={{ padding: '18px 20px', color: '#64748b', textAlign: 'center' }}>
                   Loading locations...
                 </div>
+              ) : booking.preSelectedLocation ? (
+                <div className="locked-location-box" style={{
+                  padding: '14px 16px',
+                  background: '#f8fafc',
+                  border: '2px solid #e2e8f0',
+                  borderRadius: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  color: '#1e293b',
+                  fontWeight: '600'
+                }}>
+                  <span style={{ color: '#ef4444', fontSize: '1.25rem' }}>📍</span>
+                  <span>
+                    {booking.preSelectedLocation} - {booking.preSelectedSubLocation || 'Main Location'}
+                  </span>
+                  <span style={{
+                    marginLeft: 'auto',
+                    fontSize: '11px',
+                    background: '#e0f2fe',
+                    color: '#0369a1',
+                    padding: '4px 10px',
+                    borderRadius: '12px',
+                    textTransform: 'uppercase',
+                    fontWeight: '700',
+                    letterSpacing: '0.5px'
+                  }}>
+                    Fixed for this vehicle
+                  </span>
+                </div>
               ) : (
                 <select
                   value={booking.pickupLocation}
@@ -593,7 +625,7 @@ const BookingForm = () => {
                     className="date-picker-input"
                   >
                     <option value="">Select drop location</option>
-                    {availableLocations.map((loc) => (
+                    {filteredDropLocations.map((loc) => (
                       <optgroup key={loc._id} label={`📍 ${loc.city}`}>
                         {loc.subCities && loc.subCities.length > 0 ? (
                           loc.subCities.map((subCity, idx) => (
@@ -928,7 +960,7 @@ const BookingForm = () => {
                           <img
                             src={getVehicleImageUrl(vehicle.vehicleImage)}
                             alt={vehicle.name}
-                            style={{ width: '100%', height: '120px', objectFit: 'cover', borderRadius: '12px', marginBottom: '8px' }}
+                            style={{ width: '100%', height: '120px', objectFit: 'contain', background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '6px', marginBottom: '8px' }}
                             onError={(e) => {
                               if (!e.target.dataset.errorHandled) {
                                 e.target.dataset.errorHandled = 'true';
@@ -974,7 +1006,7 @@ const BookingForm = () => {
                       <img
                         src={getVehicleImageUrl(config.vehicleImage)}
                         alt={config.vehicleName}
-                        style={{ width: '100%', height: '180px', objectFit: 'cover', borderRadius: '12px' }}
+                        style={{ width: '100%', height: '220px', objectFit: 'contain', background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px' }}
                         onError={(e) => {
                           if (!e.target.dataset.errorHandled) {
                             e.target.dataset.errorHandled = 'true';

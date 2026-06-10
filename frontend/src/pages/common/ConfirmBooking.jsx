@@ -173,8 +173,10 @@ const ConfirmBooking = () => {
               if (isNaN(pickupDate.getTime())) {
                 throw new Error(`Vehicle ${index + 1}: Invalid pickup date format`);
               }
-              if (pickupDate < new Date()) {
-                throw new Error(`Vehicle ${index + 1}: Pickup date cannot be in the past`);
+              const now = new Date();
+              const thirtyMinutesAgo = new Date(now.getTime() - 30 * 60 * 1000);
+              if (pickupDate < thirtyMinutesAgo) {
+                throw new Error(`Vehicle ${index + 1}: Pickup date cannot be more than 30 minutes in the past`);
               }
             });
 
@@ -303,6 +305,18 @@ const ConfirmBooking = () => {
         },
         timeout: 300
       };
+
+      if (orderId && orderId.startsWith('mock_order_')) {
+        console.log('🤖 Mock payment mode detected. Bypassing Razorpay modal...');
+        setTimeout(() => {
+          options.handler({
+            razorpay_order_id: orderId,
+            razorpay_payment_id: `pay_mock_${Date.now()}`,
+            razorpay_signature: `sig_mock_${Date.now()}`
+          });
+        }, 1500);
+        return;
+      }
 
       const razorpay = new window.Razorpay(options);
       

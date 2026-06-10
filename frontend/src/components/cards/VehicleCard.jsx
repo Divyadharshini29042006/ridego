@@ -118,10 +118,12 @@ const VehicleCard = ({ vehicle, onEdit, onDelete, onStatusChange, onTrack }) => 
           <FaTrash />
           <span>Delete</span>
         </button>
-        <button onClick={() => onTrack(vehicle)} className={styles['track-btn']}>
-          <FaMapMarkerAlt />
-          <span>Track</span>
-        </button>
+        {onTrack && (
+          <button onClick={() => onTrack(vehicle)} className={styles['track-btn']}>
+            <FaMapMarkerAlt />
+            <span>Track</span>
+          </button>
+        )}
       </div>
     </div>
   );

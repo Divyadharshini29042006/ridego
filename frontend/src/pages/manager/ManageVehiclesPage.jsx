@@ -4,6 +4,7 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 import vehicleAPI from '../../api/vehicleAPI';
 import VehicleCard from '../../components/cards/VehicleCard';
+import VehicleMap from '../../components/VehicleMap';
 import { getVehicleImageUrl, handleImageError } from '../../utils/imageUtils';
 import styles from '../../styles/ManageVehiclesPage.module.css';
 
@@ -26,6 +27,7 @@ const ManageVehiclesPage = () => {
     vehicleNumber: '',
     depositAmount: '',
     subLocation: 'Main Location',
+    description: '',
   });
   const [imageFile, setImageFile] = useState(null);
   const [vehicles, setVehicles] = useState([]);
@@ -35,6 +37,7 @@ const ManageVehiclesPage = () => {
   const [editingVehicle, setEditingVehicle] = useState(null);
   const [availableSubLocations, setAvailableSubLocations] = useState([]);
   const [error, setError] = useState(null);
+  const [selectedVehicleForTracking, setSelectedVehicleForTracking] = useState(null);
 
   const [managerLocation, setManagerLocation] = useState(null);
   const [locationDetails, setLocationDetails] = useState(null);
@@ -152,27 +155,49 @@ const ManageVehiclesPage = () => {
       setManagerLocation(manager.assignedLocation);
       setLocationDetails(manager.assignedLocation);
 
-      // Get manager's specific sublocation
-      let assignedSubLocation;
-      if (manager.subLocation) {
-        // Use manager's directly assigned sublocation
-        assignedSubLocation = manager.subLocation;
-      } else if (manager.assignedLocation?.subCities?.length > 0) {
-        // Fallback to first subCity from assigned location
-        assignedSubLocation = manager.assignedLocation.subCities[0];
-      } else {
-        // No sublocation found, set default
-        assignedSubLocation = 'Main Location';
+      // Get all available areas / sublocations
+      let subLocsList = [];
+      
+      // 1. Add manager's assigned location name itself
+      if (manager.assignedLocation?.name) {
+        subLocsList.push(manager.assignedLocation.name);
       }
 
-      // Set the sublocation
-      setSubLocations([assignedSubLocation]);
+      // 2. Add subCities from manager's assigned location if any
+      if (manager.assignedLocation?.subCities?.length > 0) {
+        subLocsList.push(...manager.assignedLocation.subCities);
+      }
+      
+      // 3. Add available locations in the same city (from availableSubLocations)
+      if (manager.availableSubLocations?.length > 0) {
+        subLocsList.push(...manager.availableSubLocations);
+      }
+      
+      // 4. Fallback to manager's direct subLocation or default
+      if (manager.subLocation && !subLocsList.includes(manager.subLocation)) {
+        subLocsList.push(manager.subLocation);
+      }
+      
+      // 5. If still empty, add "Main Location"
+      if (subLocsList.length === 0) {
+        subLocsList.push('Main Location');
+      }
+
+      // Unique values only
+      subLocsList = [...new Set(subLocsList)];
+
+      // Set the sublocations
+      setSubLocations(subLocsList);
+      
+      // Default to manager's assigned location name if available
+      const defaultSubLoc = manager.assignedLocation?.name || manager.subLocation || subLocsList[0] || 'Main Location';
       setFormData(prev => ({
         ...prev,
-        subLocation: assignedSubLocation
+        subLocation: defaultSubLoc
       }));
 
-      console.log('📍 Set manager sublocation:', assignedSubLocation);
+      console.log('📍 Set manager sublocations:', subLocsList);
+      console.log('📍 Default sublocation selected:', defaultSubLoc);
       setLoading(false);
 
     } catch (error) {
@@ -233,7 +258,6 @@ const ManageVehiclesPage = () => {
     if (imageFile) {
       data.append('vehicleImage', imageFile);
     }
-
     try {
       const token = localStorage.getItem('token');
       await vehicleAPI.createVehicle(data, token);
@@ -252,7 +276,8 @@ const ManageVehiclesPage = () => {
         mileage: '',
         vehicleNumber: '',
         depositAmount: '',
-        subLocation: subLocations[0] || 'Main Location'
+        subLocation: subLocations[0] || 'Main Location',
+        description: '',
       });
       setImageFile(null);
       const fileInputs = document.querySelectorAll('input[type="file"]');
@@ -596,6 +621,17 @@ const ManageVehiclesPage = () => {
                     </label>
                   </div>
                 </div>
+
+                <div className={`${styles['form-field']} ${styles['full-width']}`}>
+                  <label>Vehicle Description</label>
+                  <textarea
+                    name="description"
+                    value={formData.description || ''}
+                    onChange={handleFormChange}
+                    placeholder="Enter details about the vehicle (e.g., condition, special features, accessories)"
+                    rows="4"
+                  />
+                </div>
               </div>
 
               <button type="submit" className={styles['submit-btn']} disabled={isSubmitting}>
@@ -702,6 +738,7 @@ const ManageVehiclesPage = () => {
                       onEdit={handleEdit}
                       onDelete={handleDelete}
                       onStatusChange={handleStatusChange}
+                      onTrack={(v) => setSelectedVehicleForTracking(v)}
                     />
                   ))}
                 </div>
@@ -882,6 +919,17 @@ const ManageVehiclesPage = () => {
                     <span>{imageFile ? imageFile.name : 'Update vehicle image'}</span>
                   </label>
                 </div>
+
+                <div className={`${styles['form-field']} ${styles['full-width']}`}>
+                  <label>Vehicle Description</label>
+                  <textarea
+                    name="description"
+                    value={editingVehicle.description || ''}
+                    onChange={(e) => setEditingVehicle({...editingVehicle, description: e.target.value})}
+                    placeholder="Enter details about the vehicle (e.g., condition, special features, accessories)"
+                    rows="4"
+                  />
+                </div>
               </div>
 
               <div className={styles['modal-actions']}>
@@ -893,7 +941,35 @@ const ManageVehiclesPage = () => {
         </div>
       )}
 
-
+      {selectedVehicleForTracking && (
+        <div className={styles['modal-overlay']} onClick={() => setSelectedVehicleForTracking(null)}>
+          <div className={styles['modal-box']} style={{ maxWidth: '800px', width: '90%' }} onClick={(e) => e.stopPropagation()}>
+            <div className={styles['modal-header']}>
+              <h3>Track Vehicle: {selectedVehicleForTracking.brand} {selectedVehicleForTracking.vehicleModel}</h3>
+              <button className={styles['close-btn']} onClick={() => setSelectedVehicleForTracking(null)}>
+                <FaTimes />
+              </button>
+            </div>
+            <div className={styles['modal-body']} style={{ padding: '1.5rem' }}>
+              <div style={{ marginBottom: '1.25rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem' }}>
+                <div style={{ background: '#f9fafb', padding: '0.75rem 1rem', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                  <span style={{ fontSize: '0.75rem', color: '#6b7280', textTransform: 'uppercase', fontWeight: 600 }}>Vehicle Plate</span>
+                  <strong style={{ display: 'block', fontSize: '1rem', marginTop: '0.15rem', color: '#111827' }}>{selectedVehicleForTracking.vehicleNumber}</strong>
+                </div>
+                <div style={{ background: '#f9fafb', padding: '0.75rem 1rem', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                  <span style={{ fontSize: '0.75rem', color: '#6b7280', textTransform: 'uppercase', fontWeight: 600 }}>Status</span>
+                  <strong style={{ display: 'block', fontSize: '1rem', marginTop: '0.15rem', color: selectedVehicleForTracking.status === 'Available' ? '#10b981' : '#f59e0b' }}>{selectedVehicleForTracking.status}</strong>
+                </div>
+                <div style={{ background: '#f9fafb', padding: '0.75rem 1rem', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                  <span style={{ fontSize: '0.75rem', color: '#6b7280', textTransform: 'uppercase', fontWeight: 600 }}>Sub-location</span>
+                  <strong style={{ display: 'block', fontSize: '1rem', marginTop: '0.15rem', color: '#111827' }}>{selectedVehicleForTracking.subLocation || 'Main Location'}</strong>
+                </div>
+              </div>
+              <VehicleMap vehicles={[selectedVehicleForTracking]} />
+            </div>
+          </div>
+        </div>
+      )}
 
         </>
       )}

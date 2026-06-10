@@ -4,7 +4,7 @@ import Location from '../models/Location.js';
 import User from '../models/User.js';
 
 export const createLocation = async (req, res) => {
-  const { name, city, state, managerId, subCities } = req.body;
+  const { name, city, state, managerId, subCities, lat, lng, radius } = req.body;
 
   try {
     // 🔍 Check if location already exists
@@ -28,7 +28,10 @@ export const createLocation = async (req, res) => {
       city,
       state,
       managerId: validManager ? validManager._id : null,
-      subCities: Array.isArray(subCities) ? subCities : []
+      subCities: Array.isArray(subCities) ? subCities : [],
+      lat: lat !== undefined ? Number(lat) : 13.0827,
+      lng: lng !== undefined ? Number(lng) : 80.2707,
+      radius: radius !== undefined ? Number(radius) : 0.02
     });
 
     await location.save();
@@ -86,7 +89,7 @@ export const deleteLocation = async (req, res) => {
 export const updateLocation = async (req, res) => {
   try {
     const locationId = req.params.id;
-    const { name, city, state, managerId, subCities } = req.body;
+    const { name, city, state, managerId, subCities, lat, lng, radius } = req.body;
 
     // 🔍 Check if location exists
     const location = await Location.findById(locationId);
@@ -107,6 +110,9 @@ export const updateLocation = async (req, res) => {
     if (city) location.city = city;
     if (state) location.state = state;
     if (Array.isArray(subCities)) location.subCities = subCities;
+    if (lat !== undefined) location.lat = Number(lat);
+    if (lng !== undefined) location.lng = Number(lng);
+    if (radius !== undefined) location.radius = Number(radius);
 
     // ✅ Handle manager updates properly
     if (managerId) {

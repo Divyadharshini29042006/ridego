@@ -232,7 +232,14 @@
   background: #ffffff;
   border-radius: 20px;
   border: 1px solid #e2e8f0;
+  border-left: 6px solid #3b82f6;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.vehicle-description:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
 }
 
 .vehicle-description h3 {
@@ -244,10 +251,21 @@
 }
 
 .vehicle-description p {
+  margin: 0;
+}
+
+.custom-description {
+  font-size: 16px;
+  line-height: 1.8;
+  color: #1e293b;
+  font-weight: 500;
+  white-space: pre-wrap;
+}
+
+.default-description {
   font-size: 16px;
   line-height: 1.7;
   color: #64748b;
-  margin: 0;
   font-weight: 500;
 }
 

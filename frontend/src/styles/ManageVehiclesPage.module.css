@@ -136,7 +136,8 @@
 }
 
 .form-field input,
-.form-field select {
+.form-field select,
+.form-field textarea {
   width: 100%;
   padding: 0.875rem 1rem;
   border: 1px solid #e5e7eb;
@@ -148,14 +149,21 @@
   font-family: 'Inter', sans-serif;
 }
 
+.form-field textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
 .form-field input:focus,
-.form-field select:focus {
+.form-field select:focus,
+.form-field textarea:focus {
   outline: none;
   border-color: #000000;
   box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
 }
 
-.form-field input::placeholder {
+.form-field input::placeholder,
+.form-field textarea::placeholder {
   color: #9ca3af;
 }
 
@@ -569,7 +577,8 @@
 }
 
 .modal-form input,
-.modal-form select {
+.modal-form select,
+.modal-form textarea {
   width: 100%;
   padding: 0.75rem 1rem;
   border: 1px solid #e5e7eb;
@@ -581,11 +590,22 @@
   font-family: 'Inter', sans-serif;
 }
 
+.modal-form textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
 .modal-form input:focus,
-.modal-form select:focus {
+.modal-form select:focus,
+.modal-form textarea:focus {
   outline: none;
   border-color: #000000;
   box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
+}
+
+.modal-form input::placeholder,
+.modal-form textarea::placeholder {
+  color: #9ca3af;
 }
 
 .modal-actions {
