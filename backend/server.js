@@ -172,7 +172,7 @@ app.post('/api/auth/google', async (req, res) => {
 });
 
 // ❤️ Health check
-app.get('/', (req, res) => res.send('🚗 RideGo API running...'));
+app.get('/', (req, res) => res.send('🚗 RideGo API running v2...'));
 
 // 🧯 Global error handler
 app.use((err, req, res, next) => {
