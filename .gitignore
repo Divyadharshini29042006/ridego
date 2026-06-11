@@ -30,5 +30,5 @@ yarn-error.log*
 .claude/
 
 # Uploads/Media (so you don't push local test images)
-uploads/
-backend/uploads/
+# uploads/
+# backend/uploads/
