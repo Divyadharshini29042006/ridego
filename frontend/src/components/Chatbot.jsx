@@ -16,12 +16,20 @@ const Chatbot = () => {
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
+  // Auto-scroll to bottom when messages list or loading state changes
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, isLoading]);
 
+  // Auto-scroll to bottom and focus input when chat window is opened
   useEffect(() => {
-    if (isOpen && inputRef.current) inputRef.current.focus();
+    if (isOpen) {
+      const timer = setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        inputRef.current?.focus();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
   }, [isOpen]);
 
   const handleSendMessage = async (e) => {
@@ -50,19 +58,25 @@ const Chatbot = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: userMessage.content,
+          history: conversationHistory,
           conversationHistory
         })
       });
 
+      if (!response.ok) {
+        throw new Error('API request failed');
+      }
+
       const data = await response.json();
       const assistantMessage = {
         role: 'assistant',
-        content: data.reply,
+        content: data.reply || 'Sorry, I did not receive a proper response from the assistant.',
         timestamp: data.timestamp || new Date().toISOString(),
         fallback: data.fallback || false
       };
       setMessages(prev => [...prev, assistantMessage]);
-    } catch {
+    } catch (error) {
+      console.error('Chat error:', error);
       setMessages(prev => [...prev, {
         role: 'assistant',
         content: '⚠ Oops! Couldn’t connect right now. Please try again or contact support@ridego.com.',
@@ -75,6 +89,7 @@ const Chatbot = () => {
   };
 
   const handleSuggestionClick = (suggestion) => {
+    if (isLoading) return;
     setInputMessage(suggestion);
     inputRef.current?.focus();
   };
@@ -90,7 +105,11 @@ const Chatbot = () => {
 
   return (
     <>
-      <button className={`chatbot-button ${isOpen ? 'chatbot-button-open' : ''}`} onClick={() => setIsOpen(!isOpen)}>
+      <button 
+        className={`chatbot-button ${isOpen ? 'chatbot-button-open' : ''}`} 
+        onClick={() => setIsOpen(!isOpen)}
+        aria-label="Toggle chatbot window"
+      >
         {isOpen ? <FaTimes /> : <FaComments />}
         {!isOpen && <span className="chatbot-button-badge">AI</span>}
       </button>
@@ -105,7 +124,7 @@ const Chatbot = () => {
                 <span className="chatbot-status">Your smart rental guide</span>
               </div>
             </div>
-            <button className="chatbot-close-btn" onClick={() => setIsOpen(false)}>
+            <button className="chatbot-close-btn" onClick={() => setIsOpen(false)} aria-label="Close chatbot">
               <FaTimes />
             </button>
           </div>
@@ -113,16 +132,22 @@ const Chatbot = () => {
           <div className="chatbot-messages">
             {messages.map((msg, i) => (
               <div key={i} className={`chatbot-message ${msg.role === 'user' ? 'chatbot-message-user' : 'chatbot-message-assistant'}`}>
+                {msg.role === 'assistant' && (
+                  <div className="chatbot-message-avatar">
+                    <FaRobot />
+                  </div>
+                )}
                 <div className={`chatbot-message-content ${msg.isError ? 'chatbot-error-message' : ''}`}>
-                  {msg.content.split('\n').map((line, idx) => (
-                    <React.Fragment key={idx}>{line}<br /></React.Fragment>
-                  ))}
+                  {msg.content}
                   {msg.fallback && <div className="fallback-indicator"><small>⚙ Fallback response</small></div>}
                 </div>
               </div>
             ))}
             {isLoading && (
               <div className="chatbot-message chatbot-message-assistant">
+                <div className="chatbot-message-avatar">
+                  <FaRobot />
+                </div>
                 <div className="chatbot-message-content chatbot-typing-indicator">
                   <span></span><span></span><span></span>
                 </div>
@@ -134,7 +159,7 @@ const Chatbot = () => {
           {messages.length <= 3 && !isLoading && (
             <div className="chatbot-suggestions">
               {quickSuggestions.map((s, idx) => (
-                <button key={idx} className="chatbot-suggestion-btn" onClick={() => handleSuggestionClick(s)}>
+                <button key={idx} className="chatbot-suggestion-btn" onClick={() => handleSuggestionClick(s)} disabled={isLoading}>
                   {s}
                 </button>
               ))}
@@ -146,9 +171,10 @@ const Chatbot = () => {
               ref={inputRef}
               type="text"
               className="chatbot-input"
-              placeholder="Ask about vehicles, trips, or rentals..."
+              placeholder={isLoading ? "Typing..." : "Ask about vehicles, trips, or rentals..."}
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
+              disabled={isLoading}
             />
             <button type="submit" className="chatbot-send-btn" disabled={!inputMessage.trim() || isLoading}>
               <FaPaperPlane />

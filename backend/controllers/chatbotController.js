@@ -1,7 +1,19 @@
+import { GoogleGenAI } from '@google/genai';
 import Location from '../models/Location.js';
+import Vehicle from '../models/Vehicle.js';
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyCNfLqE611DdYlQ_FePbBmjU22G72QS-JA';
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+
+let ai = null;
+if (GEMINI_API_KEY) {
+  try {
+    ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+  } catch (error) {
+    console.error('❌ Failed to initialize GoogleGenAI client:', error);
+  }
+} else {
+  console.warn('⚠️ GEMINI_API_KEY is not defined. Chatbot will run in local fallback mode.');
+}
 
 // Comprehensive destination database with timings and details
 const DESTINATION_DATABASE = {
@@ -208,8 +220,9 @@ const DESTINATION_DATABASE = {
   }
 };
 
-const SYSTEM_PROMPT = `
-You are RideGo Assistant, a friendly and knowledgeable travel planner integrated inside the RideGo vehicle rental platform. Your job is to help users plan short itineraries, discover places near their destinations, and provide practical travel information.
+const SYSTEM_PROMPT = `You are the AI Assistant for RideGo, a premium vehicle rental and ride-sharing platform. Help users check vehicles, manage bookings, calculate fares, or handle account settings politely and concisely.
+
+You are friendly, knowledgeable, and integrated inside the RideGo vehicle rental platform. Your job is to help users check vehicles, manage bookings, calculate fares, handle account settings, plan short itineraries, discover places near their destinations, and provide practical travel information.
 
 🎯 Core Responsibilities:
 
@@ -232,12 +245,13 @@ You are RideGo Assistant, a friendly and knowledgeable travel planner integrated
    - Weather considerations for hill stations
 
 4. **Tone & Style:**
-   - Warm, conversational, and helpful
+   - Polite, concise, warm, conversational, and helpful
    - Use emojis naturally (🌿 🌊 ☕ 🎨 etc.)
    - Keep responses concise but informative
    - Be honest if you don't have specific information
 
-5. **Payment & Support:**
+5. **Payment, Support & Account Management:**
+   - Help users check vehicles, manage bookings, calculate fares, or handle account settings politely and concisely.
    - For penalty/payment queries: "You can pay your penalty in MyBookings → Pay Penalty"
    - Guide users to support@ridego.com for complex issues
    - Explain booking, cancellation, and refund policies clearly
@@ -270,24 +284,71 @@ Here's your one-day itinerary:
 
 Need vehicle recommendations or want to book a ride?"
 
-Always stay helpful, accurate, and travel-focused. If unsure about timings or details, say so naturally rather than guessing.
-`;
+Always stay helpful, polite, concise, and travel-focused. If unsure about timings or details, say so naturally rather than guessing.`;
 
 export const chatController = async (req, res) => {
   console.log('📨 Chatbot request received:', {
     message: req.body.message?.substring(0, 50) + '...',
-    hasHistory: req.body.conversationHistory?.length > 0
+    hasHistory: (req.body.history?.length > 0 || req.body.conversationHistory?.length > 0)
   });
 
-  try {
-    const { message, conversationHistory = [] } = req.body;
+  const { message, history = [], conversationHistory = [] } = req.body;
+  const activeHistory = history.length > 0 ? history : conversationHistory;
 
-    if (!message) {
-      console.error('❌ No message provided');
-      return res.status(400).json({ error: 'Message is required' });
+  if (!message) {
+    console.error('❌ No message provided');
+    return res.status(400).json({ error: 'Message is required' });
+  }
+
+  // 1. Safe query of database collections
+  let vehicles = [];
+  let locations = [];
+  try {
+    vehicles = await Vehicle.find({ status: 'Available' }).populate('assignedLocation');
+    locations = await Location.find({});
+  } catch (dbError) {
+    console.error('❌ Database query error in Chatbot:', dbError);
+  }
+
+  // 2. Format database strings into a clearly labeled text block
+  let liveDataText = 'CURRENT LIVE WEBSITE DATA FROM RIDEGO DATABASE:\n\n';
+  
+  liveDataText += 'OPERATIONAL CITIES AND LOCATIONS:\n';
+  if (locations.length > 0) {
+    locations.forEach(loc => {
+      liveDataText += `- City: ${loc.city}, Location Name: ${loc.name}, State: ${loc.state || 'N/A'}`;
+      if (loc.subCities && loc.subCities.length > 0) {
+        liveDataText += ` (Areas: ${loc.subCities.join(', ')})`;
+      }
+      liveDataText += '\n';
+    });
+  } else {
+    liveDataText += 'No operational locations registered.\n';
+  }
+
+  liveDataText += '\nAVAILABLE VEHICLES FOR RENT:\n';
+  if (vehicles.length > 0) {
+    vehicles.forEach(v => {
+      const locName = v.assignedLocation ? `${v.assignedLocation.city} - ${v.assignedLocation.name}` : 'Unknown';
+      liveDataText += `- ${v.brand} ${v.vehicleModel} (${v.vehicleType}, ${v.transmission}, ${v.fuelType}) located at ${locName}. Rent Per Day: ₹${v.rentPerDay}, Rent Per Hour: ₹${v.rentPerHour}. Deposit: ₹${v.depositAmount}. Status: ${v.status}\n`;
+    });
+  } else {
+    liveDataText += 'No vehicles are currently available for rent in the database.\n';
+  }
+
+  try {
+    // Safely check if GoogleGenAI client is available
+    if (!ai) {
+      console.warn('⚠️ GoogleGenAI client not initialized (missing API key). Falling back to local database-aware replies.');
+      const fallbackReply = getFallbackResponseWithDb(message, vehicles, locations);
+      return res.json({
+        reply: fallbackReply,
+        timestamp: new Date().toISOString(),
+        fallback: true
+      });
     }
 
-    // Detect query types
+    // Detect query types for custom context helper
     const isLocationQuery = detectLocationQuery(message);
     const isAdventureQuery = message.toLowerCase().includes('adventure');
     const isItineraryQuery = detectItineraryQuery(message);
@@ -333,41 +394,45 @@ export const chatController = async (req, res) => {
       `;
     }
 
-    // Build conversation history
-    const conversationContents = conversationHistory.map(msg => ({
+    // Build conversation history in correct format
+    const conversationContents = activeHistory.map(msg => ({
       role: msg.role === 'user' ? 'user' : 'model',
-      parts: [{ text: msg.content }]
+      parts: [{ text: msg.content || msg.text || '' }]
     }));
 
-    // API request to Gemini
-    const requestBody = {
+    // Construct the System Instruction wrapper combining the required AI prompt and the live database block
+    const systemInstruction = `You are the AI Assistant for RideGo. Your primary job is to answer user queries accurately using the live data provided below. Do not explicitly state you are reading from a text block or database payload.
+
+Help users check vehicles, manage bookings, calculate fares, or handle account settings politely and concisely.
+
+${liveDataText}
+
+🎯 Tone & Formatting Guidelines:
+- Polite, concise, helpful, and warm.
+- Use emojis naturally.
+- Keep paragraphs short and scannable.
+- Support options: Guide users to support@ridego.com for complicated issues.
+- Penalty payments: "You can pay your penalty in MyBookings → Pay Penalty".
+`;
+
+    // Generate content using modern Google Gen AI SDK
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
       contents: [
         ...conversationContents,
         {
           role: 'user',
-          parts: [{ text: SYSTEM_PROMPT + contextData + '\n\nUser: ' + message }]
+          parts: [{ text: (contextData ? `Context:\n${contextData}\n\n` : '') + message }]
         }
       ],
-      generationConfig: {
+      config: {
+        systemInstruction,
         temperature: 0.8,
         maxOutputTokens: 800,
       }
-    };
-
-    const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(requestBody)
     });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error('❌ Gemini API Error:', errorData);
-      throw new Error(`Gemini API Error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    const reply = response.text || response.candidates?.[0]?.content?.parts?.[0]?.text;
 
     if (reply) {
       res.json({
@@ -375,12 +440,12 @@ export const chatController = async (req, res) => {
         timestamp: new Date().toISOString(),
       });
     } else {
-      throw new Error('Invalid Gemini response format');
+      throw new Error('Invalid or empty Gemini response format');
     }
 
   } catch (error) {
-    console.error('❌ Chatbot error:', error.message);
-    const fallbackReply = getFallbackResponse(req.body.message);
+    console.error('❌ Chatbot error (initiating database-aware fallback):', error.message || error);
+    const fallbackReply = getFallbackResponseWithDb(message, vehicles, locations);
     res.json({
       reply: fallbackReply,
       timestamp: new Date().toISOString(),
@@ -449,6 +514,67 @@ async function searchLocations(message) {
     console.error('Error searching locations:', error);
     return [];
   }
+}
+
+function getFallbackResponseWithDb(message, vehicles = [], locations = []) {
+  const lower = message.toLowerCase();
+
+  // 1. Vehicle Queries (available, models, pricing, rentals)
+  if (lower.includes('vehicle') || lower.includes('car') || lower.includes('bike') || lower.includes('rent') || lower.includes('price') || lower.includes('pricing') || lower.includes('cost') || lower.includes('list') || lower.includes('duration')) {
+    if (vehicles.length > 0) {
+      let reply = `Here are the available vehicles from our live database: 🚘\n\n`;
+      vehicles.slice(0, 6).forEach((v, index) => {
+        const cityName = v.assignedLocation ? v.assignedLocation.city : 'our operational hubs';
+        reply += `${index + 1}️⃣ **${v.brand} ${v.vehicleModel}** (${v.vehicleType})\n`;
+        reply += `   • Rent: ₹${v.rentPerDay}/day (₹${v.rentPerHour}/hour)\n`;
+        reply += `   • Transmission: ${v.transmission} | Fuel: ${v.fuelType}\n`;
+        reply += `   • Seating: ${v.seatingCapacity} seats\n`;
+        reply += `   • Location: ${cityName}\n\n`;
+      });
+      reply += `To book any of these, please visit the **Vehicles** page, select your dates, and proceed to checkout!`;
+      return reply;
+    } else {
+      return `Currently, all our vehicles are rented out or under maintenance in the database. Please try again later or contact support@ridego.com.`;
+    }
+  }
+
+  // 2. Location Queries (where are you operational, cities, operational areas)
+  if (lower.includes('location') || lower.includes('city') || lower.includes('cities') || lower.includes('where') || lower.includes('route') || lower.includes('routes')) {
+    if (locations.length > 0) {
+      let reply = `RideGo is operational in the following cities and locations: 📍\n\n`;
+      locations.forEach((loc, index) => {
+        reply += `${index + 1}️⃣ **${loc.city}** — ${loc.name}\n`;
+        if (loc.subCities && loc.subCities.length > 0) {
+          reply += `   • Operational areas: ${loc.subCities.join(', ')}\n`;
+        }
+      });
+      reply += `\nFeel free to explore vehicles in these locations for your trip!`;
+      return reply;
+    } else {
+      return `We currently do not have any operational cities listed in our database. Please reach out to support@ridego.com for direct assistance.`;
+    }
+  }
+
+  // 3. Adventure suggestions
+  if (lower.includes('adventure')) {
+    const advVehicles = vehicles.filter(v => v.vehicleType === 'SUV' || v.rentPerDay > 1500);
+    if (advVehicles.length > 0) {
+      let reply = `🔥 Here are our recommended adventure rides from the live database:\n\n`;
+      advVehicles.slice(0, 3).forEach((v) => {
+        const city = v.assignedLocation ? v.assignedLocation.city : 'RideGo hubs';
+        reply += `🚙 **${v.brand} ${v.vehicleModel}** — ₹${v.rentPerDay}/day (available at ${city})\n`;
+      });
+      reply += `\n**RideGo Adventure Perks:**\n`;
+      reply += `✅ Full insurance coverage\n`;
+      reply += `✅ Flexible pick-up and drop locations\n`;
+      reply += `✅ 24/7 Roadside assistance\n\n`;
+      reply += `Where would you like to explore next?`;
+      return reply;
+    }
+  }
+
+  // Default to standard getFallbackResponse(message)
+  return getFallbackResponse(message);
 }
 
 function getFallbackResponse(message) {

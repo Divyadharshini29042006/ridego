@@ -23,6 +23,7 @@ import driverRoutes from './routes/driverRoutes.js';
 import bookingRoutes from './routes/bookingRoutes.js';
 import createPaymentRoutes from './routes/paymentRoutes.js';
 import contactRoutes from './controllers/contactRoutes.js';
+import chatbotRoutes from './routes/chatbotRoutes.js';
 
 
 import { retryFailedAssignments } from './services/driverAssignmentService.js';
@@ -125,6 +126,7 @@ app.use('/api/drivers', driverRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/payments', createPaymentRoutes);
 app.use('/api/contact', contactRoutes);
+app.use('/api/chat', chatbotRoutes);
 
 // 🔐 Google Sign-In Route
 app.post('/api/auth/google', async (req, res) => {
